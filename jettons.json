@@ -1,0 +1,17 @@
+{
+  "_note": "This file will be automatically updated by the GitHub Actions workflow",
+  "_example": {
+    "name": "Example Jetton",
+    "symbol": "EXAMPLE",
+    "address": "EQA...",
+    "image": "https://example.com/logo.png",
+    "description": "This is an example jetton structure",
+    "websites": [
+      "https://example.com"
+    ],
+    "social": [
+      "https://t.me/example",
+      "https://x.com/example"
+    ]
+  }
+}

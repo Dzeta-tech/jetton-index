@@ -1,0 +1,79 @@
+name: Sync TON Jettons
+
+on:
+  schedule:
+    # Run once a day at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  sync-jettons:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run sync script
+        run: |
+          python sync_jettons.py
+      
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code jettons.json || echo "changed=true" >> $GITHUB_OUTPUT
+      
+      - name: Configure Git
+        if: steps.git-check.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+      
+      - name: Create staging branch and commit changes
+        if: steps.git-check.outputs.changed == 'true'
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          BRANCH_NAME="staging/jettons-sync-$TIMESTAMP"
+          
+          git checkout -b $BRANCH_NAME
+          git add jettons.json
+          git commit -m "chore: update jettons data - $TIMESTAMP"
+          git push origin $BRANCH_NAME
+          
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+      
+      - name: Create Pull Request
+        if: steps.git-check.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ env.BRANCH_NAME }}
+          title: "Update TON Jettons Data"
+          body: |
+            ## Automated Jettons Sync
+            
+            This PR updates the `jettons.json` file with the latest data from the [ton-assets](https://github.com/tonkeeper/ton-assets) repository.
+            
+            **Changes:**
+            - Synced jetton metadata from upstream
+            - Converted YAML files to JSON format
+            
+            **Triggered by:** ${{ github.event_name == 'schedule' && 'Scheduled daily sync' || 'Manual workflow dispatch' }}
+            
+            Please review and merge if everything looks correct.
+          labels: |
+            automated
+            data-sync
+
