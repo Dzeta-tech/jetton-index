@@ -1,14 +1,17 @@
 name: Sync TON Jettons
 
 on:
+  workflow_dispatch:  # Allow manual trigger
   schedule:
     # Run once a day at 00:00 UTC
     - cron: '0 0 * * *'
-  workflow_dispatch:  # Allow manual trigger
 
 jobs:
   sync-jettons:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     
     steps:
       - name: Checkout repository
